@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
-// Define o schema do usuário
+const SALT_ROUNDS = 10;
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -15,24 +17,28 @@ const userSchema = new mongoose.Schema(
       unique: true,
       match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     },
-    age: {
-      type: Number,
-      min: [0, 'Age cannot be negative'],
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      minlength: [8, 'Password must be at least 8 characters long'],
     },
   },
   {
-    timestamps: true, // Adiciona campos createdAt e updatedAt automaticamente
+    timestamps: true,
   }
 );
 
-// Middleware para manipular erros de duplicação de email
-userSchema.post('save', function (error, doc, next) {
-  if (error.name === 'MongoServerError' && error.code === 11000) {
-    next(new Error('Email already exists'));
-  } else {
-    next();
-  }
+// Hash da senha antes de salvar
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, SALT_ROUNDS);
+  next();
 });
 
-// Exporta o modelo
+// Método para verificar a senha
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+module.exports = mongoose.model('User', userSchema);
 module.exports = mongoose.model('User', userSchema);
