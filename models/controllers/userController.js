@@ -56,3 +56,23 @@ exports.deleteUser = async (req, res, next) => {
     next(error);
   }
 };
+exports.getAllUsers = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, name } = req.query;
+    const filter = name ? { name: new RegExp(name, 'i') } : {};
+
+    const users = await User.find(filter)
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .sort({ createdAt: -1 });
+
+    const count = await User.countDocuments(filter);
+    res.status(200).json({
+      users,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
