@@ -23,3 +23,5 @@ app.use(errorHandler);
 
 // Inicializa o servidor
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const logger = require('./middlewares/logger');
+app.use(logger);
